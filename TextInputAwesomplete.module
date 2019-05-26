@@ -1,0 +1,234 @@
+<?php
+
+/**
+ * TextInputAwesomeplete module for ProcessWire
+ *
+ */
+
+/**
+ * Class TextInputAwesomeplete
+ */
+
+class TextInputAwesomplete extends WireData implements Module {
+
+    public static function getModuleInfo() {
+        return array(
+            'title' => 'Text Autocomplete',
+            'author' => 'Macrura',
+            'version' => 001,
+            'summary' => 'Enables autocomplete configured text inputs.',
+            'href' => '#',
+            'icon' => 'mouse-pointer',
+            'singular' => true,
+            'autoload' => 'template=admin',
+        );
+    }
+
+    /**
+     * New Method of defining layout settings
+     * @var array
+     */
+    protected static $configDefaults = array(
+        'enableAutocomplete'=> 0,
+        'textField'         => '',
+        'limitToTemplate'   => '',
+        'itemsList'         => '',
+        'pageSelector'      => '',
+    );
+
+    /**
+     * Set our configuration defaults
+     *
+     */
+    public function __construct() {
+        foreach(self::$configDefaults as $key => $value) {
+            $this->set($key, $value); 
+        }
+    }
+
+    //---------------END CONFIGURATION STUFF-------------------------
+
+    //protected $jsConfig = array();
+
+    public function addProperty(HookEvent $event) {
+         $event->return = 0;
+    }
+
+    public function addBlankProperty(HookEvent $event) {
+         $event->return = '';
+    }
+
+    public function init() {
+
+        // set base paths and urls for scripts
+        $this->baseUrl   = $this->config->urls->TextInputAwesomplete;
+        $this->basePath  = $this->config->paths->TextInputAwesomplete;
+
+        $this->addHookProperty("InputfieldText::enableAutocomplete", $this, "addProperty");
+        
+        // Optional Field to use when page field values for generating list
+        $this->addHookProperty("InputfieldText::textField", $this, "addBlankProperty");
+        // Selector limit by template
+        $this->addHookProperty("InputfieldText::limitToTemplate", $this, "addBlankProperty");
+        // Selector field for choosing pages to use...
+        $this->addHookProperty("InputfieldText::pageSelector", $this, "addBlankProperty");
+        // User entered list
+        $this->addHookProperty("InputfieldText::itemsList", $this, "addBlankProperty");
+
+        // Init
+        $this->addHookBefore('InputfieldText::renderReadyHook', $this, 'initAutocomplete');
+        
+        // Config
+        $this->addHookAfter("InputfieldText::getConfigInputfields", $this, 'getConfigInputfields');
+
+    }
+
+    public function getConfigInputfields(hookEvent $event) {
+        $that = $event->object;
+
+        // Limit only to text fields:
+        //if($that->hasFieldtype != 'FieldtypeText') return;
+
+        $f = $this->modules->get('InputfieldCheckbox');
+        $f->attr('name', 'enableAutocomplete');
+        $f->attr('value', 1);
+        $f->label = $this->_('Enable Autocomplete input for this field?');
+        $f->description = $this->_('If checked, you may setup your parameters for the autocomplete');
+        $f->icon = 'mouse-pointer';
+        if($that->enableAutocomplete) $f->attr('checked', 'checked');
+            else $f->collapsed = Inputfield::collapsedYes;
+        $event->return->append($f);
+
+
+        $fset = wire('modules')->get("InputfieldFieldset");
+		$fset->showIf = "enableAutocomplete=1";
+        $fset->label = 'Autocomplete Configuration';
+        $fset->icon = 'sliders';
+        
+            /**
+             * Results setup: Field to get options from
+             */
+            $text_fields = wire('fields')->find('type=FieldtypeText|FieldtypePageTitle');
+            if (count($text_fields) > 0) {
+                $f              = wire('modules')->get('InputfieldSelect');
+                $f->name        = 'textField';
+                $f->label       = __('Text Field', __FILE__);
+                $f->description = $this->_('Select which field to use for the values, or leave blank to use this field.');
+                foreach ($text_fields as $text_field) {
+                    $f->addOption($text_field->name, self::getFormattedOptionName($text_field));
+                }
+                if($that->{$f->name}) {
+                    $f->attr('value', $that->{$f->name});
+                }
+            } else {
+                // add info that no URL type fields are available
+                $f        = wire('modules')->get('InputfieldMarkup');
+                $f->name  = 'no_text_fields';
+                $f->label = __('Text fields', __FILE__);
+                $f->markupText = __('There are no text fields available', __FILE__);
+            }
+            $f->columnWidth = 50;
+            $fset->add($f);
+
+            /**
+             * Results setup: Limit to selected templates, optional or search all pages
+             */
+            $f = wire('modules')->get('InputfieldAsmSelect');
+            $f->attr('name+id', 'limitToTemplate');
+            $f->label = __('Limit searching of items to these templates', __FILE__);
+            $f->attr('title', __('Limit to templates', __FILE__));
+            $f->setAsmSelectOption('sortable', false);
+            foreach(wire('templates') as $t) {
+                if(!($t->flags & Template::flagSystem)) $f->addOption($t->name);
+            }
+            if($that->{$f->name}) {
+                $f->attr('value', $that->{$f->name});
+            }
+            $f->columnWidth = 50;
+            $fset->add($f);
+
+            // Selector field for the pages that will provide values to the Autocomplete
+            $f = $this->modules->get('InputfieldSelector');
+            $f->setAttribute('name', 'pageSelector');
+            $f->label = $this->_('Page Selector');
+            $f->description = $this->_('Selector to use when finding pages to get values from');
+            $f->value = $that->pageSelector;
+            $fset->add($f);
+
+            // User listing of autocomplete suggestions
+            $f = $this->modules->get('InputfieldTextarea');
+            $f->setAttribute('name', 'itemsList');
+            $f->label = $this->_('Items list');
+            $f->description = $this->_('List of items for autocomplete suggestions (1 per line). May be used exclusively or in combination with values from pages.');
+            $f->value = $that->itemsList;
+            $fset->add($f);
+
+
+        $event->return->append($fset);
+
+    }
+
+
+
+    public function initAutocomplete($event) {
+        $that = $event->object;
+
+        //bd($that);
+
+        if($that->enableAutocomplete) {
+
+            $that->config->scripts->add($this->baseUrl . 'vendor/awesomplete.min.js');
+            $that->config->scripts->add($this->baseUrl . 'TextInputAwesomplete.js');
+            $that->config->styles->add($this->baseUrl . 'vendor/awesomplete.css');
+
+            // Input Enabled
+            $that->attr('data-enableawesomeplete', 1);
+            
+            // Field to use, either the field, or override (textField)
+            $field = $that->textField ? : $that->name;
+            
+            // Base selector
+            $selector = "$field!=";
+            
+            // Limit by template
+            if($that->limitToTemplate && count($that->limitToTemplate)) {
+                $templates = implode('|',$that->limitToTemplate);
+                $selector .= ",template=$templates";
+            } else {
+                // limit to sibling pages
+                $pageID = $this->wire->input->id;
+                $page = $this->wire->pages->get($pageID);
+                $selector .= ",parent={$page->parent}";
+            }
+
+            if($that->pageSelector) {
+                $selector = "$field!=," . $that->pageSelector;
+            }
+
+            // find
+            $pages = $this->wire('pages')->find($selector);
+
+            // Array of values from the field on the found pages:
+            $titleArray = $pages->explode($field);
+            $titleArray = array_unique($titleArray);
+            $titleArray = array_values($titleArray);
+
+            // if user entered a list...
+            if($that->itemsList) {
+                $itemsList = explode(PHP_EOL,$that->itemsList);
+                $titleArray = array_merge($titleArray,$itemsList);
+            }
+           
+            $that->attr('data-list', implode(',',$titleArray));
+
+        }
+
+    }
+
+    public static function getFormattedOptionName($obj) {
+        return !empty($obj->label) ? $obj->label . ' (' . $obj->name . ')' : $obj->name;
+    }
+
+
+
+} // end class
