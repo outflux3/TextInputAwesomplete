@@ -86,6 +86,15 @@ class TextInputAwesomplete extends WireData implements Module {
         // Config
         $this->addHookAfter("InputfieldText::getConfigInputfields", $this, 'getConfigInputfields');
 
+
+        $this->addHookAfter('InputfieldText::getConfigAllowContext', function($event) {
+            $array = $event->return;
+            $addon = array('enableAutocomplete','acConfig','itemsList','usePages','textField','limitToTemplate','pageSelector');
+            $merged = array_merge($array, $addon);
+            $event->return = $merged;
+        });
+
+
     }
 
     public function getConfigInputfields(hookEvent $event) {
@@ -106,6 +115,7 @@ class TextInputAwesomplete extends WireData implements Module {
          * Fieldset - configuration fields
          */
         $fset = wire('modules')->get("InputfieldFieldset");
+        $fset->setAttribute('name', 'acConfig');
 		$fset->showIf = "enableAutocomplete=1";
         $fset->label = 'Autocomplete Configuration';
         $fset->icon = 'sliders';
@@ -189,12 +199,9 @@ class TextInputAwesomplete extends WireData implements Module {
             $fset->add($f);
 
 
-
-
         $event->return->append($fset);
 
     }
-
 
 
     public function initAutocomplete($event) {
