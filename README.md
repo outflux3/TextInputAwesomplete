@@ -1,32 +1,48 @@
 # Text Input Awesomplete
 
-Uses Awesomplete JS library for instantiating autocomplete suggestions on text input fields in Processwire. 
+Uses Awesomplete JS library for instantiating autocomplete suggestions on text input fields in Processwire.
 
-Can be helpful for fields where users may need to enter the same text in the same field on multiple pages, and you can't or don't want to use a Page Reference.
-
-See:
-https://leaverou.github.io/awesomplete/
-
-https://github.com/LeaVerou/awesomplete
+Supports any text field, including Page Title. Allows admins to configure a list of suggestions, or pull suggestions from Processwire pages, by configuring which pages to pull from and which field's value to use.
 
 ## Table of Contents
 
+- [About Awesomplete](#about)
+- [Benefits](#benefits)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Support](#support)
 - [Contributing](#contributing)
 
+## About Awesomplete
+
+https://leaverou.github.io/awesomplete/
+https://github.com/LeaVerou/awesomplete
+
+## Benefits & Uses
+
+Can be helpful for fields where users may need to enter the same text in the same field on multiple pages, and you can't or don't want to use a Page Reference.
+One example could be a site where you send emails using various boilerplate subjects; Another place to use this would be if you had an existing site with a text field that has some inconsistency when same values are added. The autocomplete would help editors to always use the same format as the other pages with the same value.
+
 ## Installation
 
-Refresh modules and then install. 
+Upload or install from Modules directory.  
 
-## Usage
+## Usage & Configuration
 
-Once installed, on any text input field, you will see an option to enable autocomplete. Once enabled you can setup a selector for finding the values for the autocomplete, or enter a list of items.
+Once installed, on any text input field (including Page Title), you will see an option to enable autocomplete. 
+
+Once enabled you will have the option to type a list of items for autocomplete suggestions, or enable the module to search pages for suggestions.
+
+**Note that if you enter any items in the Items List field, those will always be part of the autocomplete suggestions, in addition to pages if configured.**
+
+If you elect to use pages for the suggestions, you have these options:
+- Choose a template to limit by
+- Override which field to pull suggestions from (by default it will use the field you are configuring).
+- Setup a selector for finding the pages for the autocomplete. This overrides the template selected. Note that the selector needs to return pages that use the field being configured, or the field selected for override.
 
 ## Support
 
-URL coming soon!
+URL coming soon, for PW support forum thread.
 
 ## Contributing
 

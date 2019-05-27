@@ -2,7 +2,7 @@
 
 /**
  * TextInputAwesomeplete module for ProcessWire
- *
+ *  
  */
 
 /**
@@ -15,9 +15,9 @@ class TextInputAwesomplete extends WireData implements Module {
         return array(
             'title' => 'Text Autocomplete',
             'author' => 'Macrura',
-            'version' => 001,
+            'version' => 002,
             'summary' => 'Enables autocomplete configured text inputs.',
-            'href' => '#',
+            'href' => 'https://github.com/outflux3/TextInputAwesomplete',
             'icon' => 'mouse-pointer',
             'singular' => true,
             'autoload' => 'template=admin',
@@ -30,10 +30,12 @@ class TextInputAwesomplete extends WireData implements Module {
      */
     protected static $configDefaults = array(
         'enableAutocomplete'=> 0,
-        'textField'         => '',
-        'limitToTemplate'   => '',
-        'itemsList'         => '',
-        'pageSelector'      => '',
+        'itemsList'         => '', // list of suggestions
+
+        'usePages'          => '', // use pages field values for suggestions
+        'textField'         => '', // override field to pull values from
+        'limitToTemplate'   => '', // limit by template, or if not set, use siblings
+        'pageSelector'      => '', // use a selector for more specfic pages to use as source for suggestions
     );
 
     /**
@@ -66,15 +68,18 @@ class TextInputAwesomplete extends WireData implements Module {
 
         $this->addHookProperty("InputfieldText::enableAutocomplete", $this, "addProperty");
         
+        // User entered list
+        $this->addHookProperty("InputfieldText::itemsList", $this, "addBlankProperty");
+
+        // Use pages field values for suggestions
+        $this->addHookProperty("InputfieldText::usePages", $this, "addProperty");
         // Optional Field to use when page field values for generating list
         $this->addHookProperty("InputfieldText::textField", $this, "addBlankProperty");
         // Selector limit by template
         $this->addHookProperty("InputfieldText::limitToTemplate", $this, "addBlankProperty");
         // Selector field for choosing pages to use...
         $this->addHookProperty("InputfieldText::pageSelector", $this, "addBlankProperty");
-        // User entered list
-        $this->addHookProperty("InputfieldText::itemsList", $this, "addBlankProperty");
-
+        
         // Init
         $this->addHookBefore('InputfieldText::renderReadyHook', $this, 'initAutocomplete');
         
@@ -85,9 +90,6 @@ class TextInputAwesomplete extends WireData implements Module {
 
     public function getConfigInputfields(hookEvent $event) {
         $that = $event->object;
-
-        // Limit only to text fields:
-        //if($that->hasFieldtype != 'FieldtypeText') return;
 
         $f = $this->modules->get('InputfieldCheckbox');
         $f->attr('name', 'enableAutocomplete');
@@ -100,11 +102,56 @@ class TextInputAwesomplete extends WireData implements Module {
         $event->return->append($f);
 
 
+        /**
+         * Fieldset - configuration fields
+         */
         $fset = wire('modules')->get("InputfieldFieldset");
 		$fset->showIf = "enableAutocomplete=1";
         $fset->label = 'Autocomplete Configuration';
         $fset->icon = 'sliders';
         
+            // User listing of autocomplete suggestions
+            $f = $this->modules->get('InputfieldTextarea');
+            $f->setAttribute('name', 'itemsList');
+            $f->label = $this->_('Items list');
+            $f->description = $this->_('List of items for autocomplete suggestions (1 per line). May be used exclusively or in combination with values from pages.');
+            $f->rows = 2;
+            $f->value = $that->itemsList;
+            $f->collapsed = Inputfield::collapsedBlank;
+            $fset->add($f);
+
+
+            // allow pages
+            $f = $this->modules->get('InputfieldCheckbox');
+            $f->attr('name', 'usePages');
+            $f->attr('value', 1);
+            $f->label = $this->_('Source suggestions from Pages.');
+            $f->description = $this->_('Pull suggestions from pages (e.g. other pages field values).');
+            $f->icon = 'file';
+            if($that->usePages) $f->attr('checked', 'checked');
+                else $f->collapsed = Inputfield::collapsedYes;
+            $fset->add($f);
+            
+            /**
+             * Results setup: Limit to selected templates, optional or search all pages
+             */
+            $f = wire('modules')->get('InputfieldAsmSelect');
+            $f->attr('name+id', 'limitToTemplate');
+            $f->label = __('Limit searching of items to these templates', __FILE__);
+            $f->description = $this->_('If no template is selected here, the module will limit to sibling pages only.');
+            $f->attr('title', __('Limit to templates', __FILE__));
+            $f->setAsmSelectOption('sortable', false);
+            foreach(wire('templates') as $t) {
+                if(!($t->flags & Template::flagSystem)) $f->addOption($t->name);
+            }
+            if($that->{$f->name}) {
+                $f->attr('value', $that->{$f->name});
+            }
+            $f->columnWidth = 50;
+            $f->showIf = "usePages=1";
+            $f->collapsed = Inputfield::collapsedBlank;
+            $fset->add($f);
+
             /**
              * Results setup: Field to get options from
              */
@@ -112,8 +159,8 @@ class TextInputAwesomplete extends WireData implements Module {
             if (count($text_fields) > 0) {
                 $f              = wire('modules')->get('InputfieldSelect');
                 $f->name        = 'textField';
-                $f->label       = __('Text Field', __FILE__);
-                $f->description = $this->_('Select which field to use for the values, or leave blank to use this field.');
+                $f->label       = __('Suggestion Source Field (override)', __FILE__);
+                $f->description = $this->_('Override which field to use for the values. Leave blank to use this field.');
                 foreach ($text_fields as $text_field) {
                     $f->addOption($text_field->name, self::getFormattedOptionName($text_field));
                 }
@@ -128,40 +175,20 @@ class TextInputAwesomplete extends WireData implements Module {
                 $f->markupText = __('There are no text fields available', __FILE__);
             }
             $f->columnWidth = 50;
-            $fset->add($f);
-
-            /**
-             * Results setup: Limit to selected templates, optional or search all pages
-             */
-            $f = wire('modules')->get('InputfieldAsmSelect');
-            $f->attr('name+id', 'limitToTemplate');
-            $f->label = __('Limit searching of items to these templates', __FILE__);
-            $f->attr('title', __('Limit to templates', __FILE__));
-            $f->setAsmSelectOption('sortable', false);
-            foreach(wire('templates') as $t) {
-                if(!($t->flags & Template::flagSystem)) $f->addOption($t->name);
-            }
-            if($that->{$f->name}) {
-                $f->attr('value', $that->{$f->name});
-            }
-            $f->columnWidth = 50;
+            $f->showIf = "usePages=1";
+            $f->collapsed = Inputfield::collapsedBlank;
             $fset->add($f);
 
             // Selector field for the pages that will provide values to the Autocomplete
             $f = $this->modules->get('InputfieldSelector');
             $f->setAttribute('name', 'pageSelector');
             $f->label = $this->_('Page Selector');
-            $f->description = $this->_('Selector to use when finding pages to get values from');
+            $f->description = $this->_('For more granular control over which pages to use for suggestions.');
             $f->value = $that->pageSelector;
+            $f->collapsed = Inputfield::collapsedBlank;
             $fset->add($f);
 
-            // User listing of autocomplete suggestions
-            $f = $this->modules->get('InputfieldTextarea');
-            $f->setAttribute('name', 'itemsList');
-            $f->label = $this->_('Items list');
-            $f->description = $this->_('List of items for autocomplete suggestions (1 per line). May be used exclusively or in combination with values from pages.');
-            $f->value = $that->itemsList;
-            $fset->add($f);
+
 
 
         $event->return->append($fset);
@@ -173,8 +200,6 @@ class TextInputAwesomplete extends WireData implements Module {
     public function initAutocomplete($event) {
         $that = $event->object;
 
-        //bd($that);
-
         if($that->enableAutocomplete) {
 
             $that->config->scripts->add($this->baseUrl . 'vendor/awesomplete.min.js');
@@ -184,34 +209,41 @@ class TextInputAwesomplete extends WireData implements Module {
             // Input Enabled
             $that->attr('data-enableawesomeplete', 1);
             
-            // Field to use, either the field, or override (textField)
-            $field = $that->textField ? : $that->name;
+
+            $titleArray = [];
+
+            if($that->usePages) {
+                // Field to use, either the field, or override (textField)
+                $field = $that->textField ? : $that->name;
+                
+                // Base selector
+                $selector = "$field!=";
+                
+                // Limit by template
+                if($that->limitToTemplate && count($that->limitToTemplate)) {
+                    $templates = implode('|',$that->limitToTemplate);
+                    $selector .= ",template=$templates";
+                } else {
+                    // limit to sibling pages
+                    $pageID = $this->wire->input->id;
+                    $page = $this->wire->pages->get($pageID);
+                    $selector .= ",parent={$page->parent}";
+                }
+
+                // Selector field, overrides the template select
+                if($that->pageSelector) {
+                    $selector = "$field!=," . $that->pageSelector;
+                }
+
+                // find
+                $pages = $this->wire('pages')->find($selector);
+
+                // Array of values from the field on the found pages:
+                $titleArray = $pages->explode($field);
+                $titleArray = array_unique($titleArray);
+                $titleArray = array_values($titleArray);
             
-            // Base selector
-            $selector = "$field!=";
-            
-            // Limit by template
-            if($that->limitToTemplate && count($that->limitToTemplate)) {
-                $templates = implode('|',$that->limitToTemplate);
-                $selector .= ",template=$templates";
-            } else {
-                // limit to sibling pages
-                $pageID = $this->wire->input->id;
-                $page = $this->wire->pages->get($pageID);
-                $selector .= ",parent={$page->parent}";
             }
-
-            if($that->pageSelector) {
-                $selector = "$field!=," . $that->pageSelector;
-            }
-
-            // find
-            $pages = $this->wire('pages')->find($selector);
-
-            // Array of values from the field on the found pages:
-            $titleArray = $pages->explode($field);
-            $titleArray = array_unique($titleArray);
-            $titleArray = array_values($titleArray);
 
             // if user entered a list...
             if($that->itemsList) {
