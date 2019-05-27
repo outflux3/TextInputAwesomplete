@@ -6,7 +6,7 @@ Supports any text field, including Page Title. Allows admins to configure a list
 
 ## Table of Contents
 
-- [About Awesomplete](#about)
+- [About Awesomplete](#about-awesomplete)
 - [Benefits](#benefits--uses)
 - [Installation](#installation)
 - [Usage](#usage--configuration)
@@ -16,6 +16,7 @@ Supports any text field, including Page Title. Allows admins to configure a list
 ## About Awesomplete
 
 https://leaverou.github.io/awesomplete/
+
 https://github.com/LeaVerou/awesomplete
 
 ## Benefits & Uses
