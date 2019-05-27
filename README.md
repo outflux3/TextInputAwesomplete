@@ -7,9 +7,9 @@ Supports any text field, including Page Title. Allows admins to configure a list
 ## Table of Contents
 
 - [About Awesomplete](#about)
-- [Benefits](#benefits)
+- [Benefits](#benefits--uses)
 - [Installation](#installation)
-- [Usage](#usage)
+- [Usage](#usage--configuration)
 - [Support](#support)
 - [Contributing](#contributing)
 
