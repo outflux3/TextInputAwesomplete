@@ -15,7 +15,7 @@ class TextInputAwesomplete extends WireData implements Module {
         return array(
             'title' => 'Text Autocomplete',
             'author' => 'Macrura',
-            'version' => 002,
+            'version' => '002',
             'summary' => 'Enables autocomplete configured text inputs.',
             'href' => 'https://github.com/outflux3/TextInputAwesomplete',
             'icon' => 'mouse-pointer',
@@ -99,6 +99,9 @@ class TextInputAwesomplete extends WireData implements Module {
 
     public function getConfigInputfields(hookEvent $event) {
         $that = $event->object;
+
+        // Limit only to text fields:
+        if($that->hasFieldtype == 'FieldtypeTextarea') return;
 
         $f = $this->modules->get('InputfieldCheckbox');
         $f->attr('name', 'enableAutocomplete');
