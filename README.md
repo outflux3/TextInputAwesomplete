@@ -51,7 +51,9 @@ If you elect to use pages for the suggestions, you have these options:
 
 ## Support
 
-URL coming soon, for PW support forum thread.
+ProcessWire Support Thread
+
+[https://processwire.com/talk/topic/21697-textinputawesomplete/](https://processwire.com/talk/topic/21697-textinputawesomplete/)
 
 ## Contributing
 
