@@ -45,8 +45,9 @@ If you elect to use pages for the suggestions, you have these options:
 - Choose a template to limit by *(adds a template=sometemplate to the pages find selector)*. 
 - Override which field to pull suggestions from (by default it will use the field you are configuring). *Sets the $field!= in the selector*.
 - Setup a **Selector** for finding the pages for the autocomplete suggestions. 
-     – This overrides the template selected. 
-     – Note that the selector needs to return pages that use the field being configured, or the field selected for override.
+
+	– This overrides the template selected. 
+	– Note that the selector needs to return pages that use the field being configured, or the field selected for override.
 
 ## Support
 
