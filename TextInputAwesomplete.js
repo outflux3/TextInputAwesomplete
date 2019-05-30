@@ -16,7 +16,14 @@ $(document).ready(function() {
 var initAwesomplete = function($textField) {
     var thisID = $textField.attr('id');
     var optsID = thisID.split('_repeater')[0];
+
+    var thisOpts = 'TextInputAwesomplete.' + optsID;
+    eval('var selectOptions=config.'+thisOpts);
+
+
     var input = document.getElementById(thisID);
     var awesomplete = new Awesomplete(input);
+
+    awesomplete.list = selectOptions;
 }
 

@@ -15,7 +15,7 @@ class TextInputAwesomplete extends WireData implements Module {
         return array(
             'title' => 'Text Autocomplete',
             'author' => 'Macrura',
-            'version' => '002',
+            'version' => '004',
             'summary' => 'Enables autocomplete configured text inputs.',
             'href' => 'https://github.com/outflux3/TextInputAwesomplete',
             'icon' => 'mouse-pointer',
@@ -50,7 +50,7 @@ class TextInputAwesomplete extends WireData implements Module {
 
     //---------------END CONFIGURATION STUFF-------------------------
 
-    //protected $jsConfig = array();
+    protected $jsConfig = array();
 
     public function addProperty(HookEvent $event) {
          $event->return = 0;
@@ -261,7 +261,11 @@ class TextInputAwesomplete extends WireData implements Module {
                 $titleArray = array_merge($titleArray,$itemsList);
             }
            
-            $that->attr('data-list', implode(',',$titleArray));
+            //$that->attr('data-list', implode(',',$titleArray));
+
+            $this->jsConfig[$that->id] = $titleArray;
+            $this->config->js(__CLASS__, $this->jsConfig);
+
 
         }
 
