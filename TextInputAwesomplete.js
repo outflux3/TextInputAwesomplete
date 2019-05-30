@@ -20,7 +20,6 @@ var initAwesomplete = function($textField) {
     var thisOpts = 'TextInputAwesomplete.' + optsID;
     eval('var selectOptions=config.'+thisOpts);
 
-
     var input = document.getElementById(thisID);
     var awesomplete = new Awesomplete(input);
 
