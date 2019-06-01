@@ -1,8 +1,9 @@
 <?php
 
 /**
- * TextInputAwesomeplete module for ProcessWire
- *  
+ *  TextInputAwesomeplete module for ProcessWire
+ *  Modules Directory: https://modules.processwire.com/modules/text-input-awesomplete/
+ *  Forum: https://processwire.com/talk/topic/21697-textinputawesomplete/
  */
 
 /**
@@ -13,9 +14,9 @@ class TextInputAwesomplete extends WireData implements Module {
 
     public static function getModuleInfo() {
         return array(
-            'title' => 'Text Autocomplete',
+            'title' => 'Text Input Awesomplete',
             'author' => 'Macrura',
-            'version' => '004',
+            'version' => '005',
             'summary' => 'Enables autocomplete configured text inputs.',
             'href' => 'https://github.com/outflux3/TextInputAwesomplete',
             'icon' => 'mouse-pointer',
@@ -86,7 +87,6 @@ class TextInputAwesomplete extends WireData implements Module {
         // Config
         $this->addHookAfter("InputfieldText::getConfigInputfields", $this, 'getConfigInputfields');
 
-
         $this->addHookAfter('InputfieldText::getConfigAllowContext', function($event) {
             $array = $event->return;
             $addon = array('enableAutocomplete','acConfig','itemsList','usePages','textField','limitToTemplate','pageSelector');
@@ -112,7 +112,6 @@ class TextInputAwesomplete extends WireData implements Module {
         if($that->enableAutocomplete) $f->attr('checked', 'checked');
             else $f->collapsed = Inputfield::collapsedYes;
         $event->return->append($f);
-
 
         /**
          * Fieldset - configuration fields
@@ -219,7 +218,6 @@ class TextInputAwesomplete extends WireData implements Module {
             // Input Enabled
             $that->attr('data-enableawesomeplete', 1);
             
-
             $titleArray = [];
 
             if($that->usePages) {
@@ -266,7 +264,6 @@ class TextInputAwesomplete extends WireData implements Module {
             $this->jsConfig[$that->id] = $titleArray;
             $this->config->js(__CLASS__, $this->jsConfig);
 
-
         }
 
     }
@@ -274,7 +271,6 @@ class TextInputAwesomplete extends WireData implements Module {
     public static function getFormattedOptionName($obj) {
         return !empty($obj->label) ? $obj->label . ' (' . $obj->name . ')' : $obj->name;
     }
-
 
 
 } // end class
