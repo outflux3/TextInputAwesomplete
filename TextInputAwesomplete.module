@@ -16,7 +16,7 @@ class TextInputAwesomplete extends WireData implements Module {
         return array(
             'title' => 'Text Input Awesomplete',
             'author' => 'Macrura',
-            'version' => '005',
+            'version' => '006',
             'summary' => 'Enables autocomplete configured text inputs.',
             'href' => 'https://github.com/outflux3/TextInputAwesomplete',
             'icon' => 'mouse-pointer',
@@ -223,7 +223,12 @@ class TextInputAwesomplete extends WireData implements Module {
             if($that->usePages) {
                 // Field to use, either the field, or override (textField)
                 $field = $that->textField ? : $that->name;
-                
+
+                // This needs to be added to support virtual fields which is how
+                // custom fields on images seem to work (?)
+                $fieldExists = $this->wire('fields')->get("name=$field");
+                if(!$fieldExists) return;
+
                 // Base selector
                 $selector = "$field!=";
                 
