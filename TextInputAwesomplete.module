@@ -16,7 +16,7 @@ class TextInputAwesomplete extends WireData implements Module {
         return array(
             'title' => 'Text Input Awesomplete',
             'author' => 'Macrura',
-            'version' => '006',
+            'version' => '007',
             'summary' => 'Enables autocomplete configured text inputs.',
             'href' => 'https://github.com/outflux3/TextInputAwesomplete',
             'icon' => 'mouse-pointer',
@@ -260,7 +260,9 @@ class TextInputAwesomplete extends WireData implements Module {
 
             // if user entered a list...
             if($that->itemsList) {
-                $itemsList = explode(PHP_EOL,$that->itemsList);
+                //$itemsList = explode(PHP_EOL,$that->itemsList);
+                //$itemsList = preg_split('/\n|\r\n?/', $that->itemsList);
+                $itemsList = explode("\n", str_replace("\r", "", $that->itemsList));
                 $titleArray = array_merge($titleArray,$itemsList);
             }
            
